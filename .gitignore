@@ -4,3 +4,5 @@ server/node_modules
 client/public
 
 server/.env
+
+mongodb_commands.txt
