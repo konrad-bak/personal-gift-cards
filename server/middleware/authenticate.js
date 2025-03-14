@@ -1,5 +1,8 @@
+import jwt from 'jsonwebtoken';
+const JWT_SECRET = process.env.JWT_SECRET;
+
 const authenticate = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1]; // Extract token
+  const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
     return res.status(401).send({ message: 'Authentication required' });
@@ -9,7 +12,9 @@ const authenticate = (req, res, next) => {
     if (err) {
       return res.status(401).send({ message: 'Invalid token' });
     }
-    req.userId = decoded.userId; // Attach userId to request
+    req.userId = decoded.userId;
     next();
   });
 };
+
+export default authenticate;
