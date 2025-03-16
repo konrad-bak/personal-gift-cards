@@ -15,7 +15,7 @@ const TestComponent: React.FC = () => {
 
   const handleLogin = async () => {
     const credentials: Credentials = {
-      username: 'Test',
+      email: 'test@example.com',
       password: 'test',
     }; // Updated username
     try {
