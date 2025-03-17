@@ -80,6 +80,21 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     return isValid;
   };
 
+  const strings = {
+    signIn: 'Sign in',
+    email: 'Email',
+    emailPlaceholder: 'your@email.com',
+    password: 'Password',
+    passwordPlaceholder: '••••••',
+    rememberMe: 'Remember me',
+    forgot: 'Forgot your password?',
+    or: 'or',
+    withGoogle: 'with Google',
+    withFacebook: 'with Facebook',
+    dontHaveAcc: "Don't have an account?",
+    signUp: 'Sign up',
+  };
+
   return (
     <AppTheme {...props}>
       <CssBaseline enableColorScheme />
@@ -93,7 +108,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             variant="h4"
             sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
           >
-            Sign in
+            {strings.signIn}
           </Typography>
           <Box
             component="form"
@@ -107,14 +122,14 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             }}
           >
             <FormControl>
-              <FormLabel htmlFor="email">Email</FormLabel>
+              <FormLabel htmlFor="email">{strings.email}</FormLabel>
               <TextField
                 error={emailError}
                 helperText={emailErrorMessage}
                 id="email"
                 type="email"
                 name="email"
-                placeholder="your@email.com"
+                placeholder={strings.emailPlaceholder}
                 autoComplete="email"
                 autoFocus
                 required
@@ -124,12 +139,12 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               />
             </FormControl>
             <FormControl>
-              <FormLabel htmlFor="password">Password</FormLabel>
+              <FormLabel htmlFor="password">{strings.password}</FormLabel>
               <TextField
                 error={passwordError}
                 helperText={passwordErrorMessage}
                 name="password"
-                placeholder="••••••"
+                placeholder={strings.passwordPlaceholder}
                 type="password"
                 id="password"
                 autoComplete="current-password"
@@ -142,7 +157,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             </FormControl>
             <FormControlLabel
               control={<Checkbox value="remember" color="primary" />}
-              label="Remember me"
+              label={strings.rememberMe}
             />
             <ForgotPassword open={open} handleClose={handleClose} />
             <Button
@@ -151,7 +166,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               variant="contained"
               onClick={validateInputs}
             >
-              Sign in
+              {strings.signIn}
             </Button>
             <Link
               component="button"
@@ -160,35 +175,35 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               variant="body2"
               sx={{ alignSelf: 'center' }}
             >
-              Forgot your password?
+              {strings.forgot}
             </Link>
           </Box>
-          <Divider>or</Divider>
+          <Divider>{strings.or}</Divider>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => alert('Sign in with Google')}
+              onClick={() => alert(`${strings.signIn} ${strings.withGoogle}`)}
               startIcon={<GoogleIcon />}
             >
-              Sign in with Google
+              {`${strings.signIn} ${strings.withGoogle}`}
             </Button>
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => alert('Sign in with Facebook')}
+              onClick={() => alert(`${strings.signIn} ${strings.withFacebook}`)}
               startIcon={<FacebookIcon />}
             >
-              Sign in with Facebook
+              {`${strings.signIn} ${strings.withFacebook}`}
             </Button>
             <Typography sx={{ textAlign: 'center' }}>
-              Don&apos;t have an account?{' '}
+              {`${strings.dontHaveAcc} `}
               <Link
                 href="/material-ui/getting-started/templates/sign-in/"
                 variant="body2"
                 sx={{ alignSelf: 'center' }}
               >
-                Sign up
+                {strings.signUp}
               </Link>
             </Typography>
           </Box>
