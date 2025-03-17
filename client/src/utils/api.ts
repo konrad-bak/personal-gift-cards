@@ -155,6 +155,26 @@ const api = {
       throw error;
     }
   },
+
+  deleteCard: async (cardId: string, userId: string): Promise<any> => {
+    try {
+      const token = localStorage.getItem('token');
+      const response: AxiosResponse = await axios.delete(
+        `${API_BASE_URL}/cards/delete/${cardId}/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log('Delete Card Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        'Delete Card Error:',
+        error.response ? error.response.data : error.message
+      );
+      throw error;
+    }
+  },
 };
 
 export default api;
