@@ -6,8 +6,8 @@ const TestComponent: React.FC = () => {
     const userData: UserData = {
       username: 'Test',
       email: 'test@example.com',
-      password: 'test',
-    }; // Updated username
+      password: 'testtest123',
+    };
     try {
       await api.registerUser(userData);
     } catch (error) {}
@@ -16,10 +16,21 @@ const TestComponent: React.FC = () => {
   const handleLogin = async () => {
     const credentials: Credentials = {
       email: 'test@example.com',
-      password: 'test',
-    }; // Updated username
+      password: 'testtest123',
+    };
     try {
       await api.loginUser(credentials);
+    } catch (error) {}
+  };
+
+  const handleLogout = () => {
+    api.logoutUser();
+  };
+
+  const handleDeleteUser = async () => {
+    const userId = localStorage.getItem('userId') || '';
+    try {
+      await api.deleteUser(userId);
     } catch (error) {}
   };
 
@@ -57,8 +68,10 @@ const TestComponent: React.FC = () => {
 
   return (
     <div>
-      <button onClick={handleRegister}>Register</button>
-      <button onClick={handleLogin}>Login</button>
+      <button onClick={handleRegister}>Register Test user</button>
+      <button onClick={handleLogin}>Login Test user</button>
+      <button onClick={handleLogout}>Logout! Test user</button>
+      <button onClick={handleDeleteUser}>Delete Test user</button>
       <button onClick={handleCreateCard}>Create Card</button>
       <button onClick={handleGetUserCards}>Get User Cards</button>
       <button onClick={handleSendCard}>Send Card</button>

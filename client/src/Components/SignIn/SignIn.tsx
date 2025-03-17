@@ -13,6 +13,7 @@ import { styled } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
+import api, { Credentials } from '../../utils/api';
 import AppTheme from '../shared-theme/AppTheme';
 import ColorModeSelect from '../shared-theme/ColorModeSelect';
 import { FacebookIcon, GoogleIcon } from './components/CustomIcons';
@@ -75,7 +76,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     setOpen(false);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     if (emailError || passwordError) {
       event.preventDefault();
       return;
@@ -85,6 +86,19 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
       email: data.get('email'),
       password: data.get('password'),
     });
+
+    const email = data.get('email');
+    const password = data.get('password');
+
+    if (email && password) {
+      const credentials: Credentials = {
+        email: email,
+        password: password,
+      };
+      try {
+        await api.loginUser(credentials);
+      } catch (error) {}
+    }
   };
 
   const validateInputs = () => {

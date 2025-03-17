@@ -9,8 +9,8 @@ export interface UserData {
 }
 
 export interface Credentials {
-  email: string;
-  password: string;
+  email: string | FormDataEntryValue;
+  password: string | FormDataEntryValue;
 }
 
 export interface CardData {
@@ -57,6 +57,31 @@ const api = {
     } catch (error: any) {
       console.error(
         'Login User Error:',
+        error.response ? error.response.data : error.message
+      );
+      throw error;
+    }
+  },
+
+  logoutUser: (): void => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+  },
+
+  deleteUser: async (userId: string): Promise<any> => {
+    try {
+      const token = localStorage.getItem('token');
+      const response: AxiosResponse = await axios.delete(
+        `${API_BASE_URL}/auth/users/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log('Delete User Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        'Delete User Error:',
         error.response ? error.response.data : error.message
       );
       throw error;
