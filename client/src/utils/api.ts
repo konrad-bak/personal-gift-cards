@@ -66,6 +66,8 @@ const api = {
   logoutUser: (): void => {
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
+
+    console.log('User logged out.');
   },
 
   deleteUser: async (userId: string): Promise<any> => {
