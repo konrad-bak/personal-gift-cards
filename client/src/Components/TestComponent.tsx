@@ -1,7 +1,12 @@
 import React from 'react';
+import { useDispatch } from 'react-redux';
+import { clearUser, setUser } from '../redux/actions';
+import { AppDispatch } from '../redux/store';
 import api, { CardData, Credentials, UserData } from '../utils/api';
 
 const TestComponent: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+
   const handleRegister = async () => {
     const userData: UserData = {
       username: 'Test',
@@ -19,12 +24,16 @@ const TestComponent: React.FC = () => {
       password: 'testtest123',
     };
     try {
-      await api.loginUser(credentials);
+      const loginResponse = await api.loginUser(credentials);
+      if (loginResponse) {
+        dispatch(setUser({ username: loginResponse.username }));
+      }
     } catch (error) {}
   };
 
   const handleLogout = () => {
     api.logoutUser();
+    dispatch(clearUser());
   };
 
   const handleDeleteUser = async () => {

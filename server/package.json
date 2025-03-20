@@ -5,8 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "server": "npm run dbstart & node --env-file=.env ./server.js",
-    "dbstart": "sudo systemctl start mongod",
+    "server": "node --env-file=.env ./server.js",
+    "db": "sudo systemctl start mongod",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
