@@ -26,7 +26,13 @@ const TestComponent: React.FC = () => {
     try {
       const loginResponse = await api.loginUser(credentials);
       if (loginResponse) {
-        dispatch(setUser({ username: loginResponse.username }));
+        dispatch(
+          setUser({
+            userId: loginResponse.userId,
+            token: loginResponse.token,
+            username: loginResponse.username,
+          })
+        );
       }
     } catch (error) {}
   };

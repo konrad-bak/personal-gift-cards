@@ -10,9 +10,9 @@ import Link from '@mui/material/Link';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { setUser } from '../../redux/actions';
-import { AppDispatch, RootState } from '../../redux/store';
+import { AppDispatch } from '../../redux/store';
 import api, { Credentials } from '../../utils/api';
 import AppTheme from '../shared-theme/AppTheme';
 import ColorModeSelect from '../shared-theme/ColorModeSelect';
@@ -28,7 +28,6 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
   const [open, setOpen] = React.useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
-  const user = useSelector((state: RootState) => state.user);
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -56,7 +55,13 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
       try {
         const loginResponse = await api.loginUser(credentials);
         if (loginResponse) {
-          dispatch(setUser({ username: loginResponse.username }));
+          dispatch(
+            setUser({
+              userId: loginResponse.userId,
+              token: loginResponse.token,
+              username: loginResponse.username,
+            })
+          );
         }
       } catch (error) {}
     }

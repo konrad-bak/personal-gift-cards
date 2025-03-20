@@ -7,6 +7,7 @@ import './App.css';
 import Login from './Components/Login';
 import SignIn from './Components/SignIn/SignIn';
 import TestComponent from './Components/TestComponent';
+import UserCards from './Components/UserCards/UserCards';
 import { RootState } from './redux/store';
 
 function App() {
@@ -15,11 +16,7 @@ function App() {
     <>
       <Login />
       <TestComponent />
-      {!user.isLoggedIn ? (
-        <SignIn />
-      ) : (
-        <>YOU ARE LOGGED IN as {user.username}</>
-      )}
+      {!user.isLoggedIn ? <SignIn /> : <UserCards />}
     </>
   );
 }
