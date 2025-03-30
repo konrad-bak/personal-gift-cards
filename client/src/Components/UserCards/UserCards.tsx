@@ -1,8 +1,9 @@
-import { Box, Button, Container, Skeleton } from '@mui/material';
+import { Box, Container, Skeleton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import api from '../../utils/api';
+import CreateCardModal from './components/CreateCardModal';
 
 const UserCards = () => {
   const [cards, setCards] = useState<any[] | null>([]);
@@ -44,7 +45,7 @@ const UserCards = () => {
               <div>{cardsError.message}</div>
             )}
           </Box>
-          <Button>Create Card</Button>
+          <CreateCardModal />
         </Container>
       ) : (
         <Skeleton />

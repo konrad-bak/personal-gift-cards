@@ -5,7 +5,7 @@ import authRoutes from './routes/auth.js';
 import cardRoutes from './routes/cards.js';
 
 const app = e();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 8080;
 
 const corsOptions = {
   origin: 'http://127.0.0.1:5173',
