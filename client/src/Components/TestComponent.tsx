@@ -52,6 +52,7 @@ const TestComponent: React.FC = () => {
   const handleCreateCard = async () => {
     const userId = localStorage.getItem('userId') || '';
     const cardData: CardData = {
+      _id: undefined,
       title: 'Test Card',
       content: 'This is a test card.',
       owner: userId,
@@ -76,7 +77,7 @@ const TestComponent: React.FC = () => {
     try {
       const cards = await api.getUserCards(userId);
       if (cards && cards.length > 0) {
-        await api.sendCard(cards[0]._id, userId);
+        await api.sendCard(cards[0]._id || '', userId);
       }
     } catch (error) {}
   };

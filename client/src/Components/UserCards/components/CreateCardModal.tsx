@@ -7,18 +7,22 @@ import {
   Box,
   Modal,
   Typography,
+  ImageList,
+  ImageListItem,
+  Input,
+  CircularProgress,
 } from '@mui/material';
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store';
 import api, { CardData } from '../../../utils/api';
+import axios from 'axios';
 
 const style = {
   position: 'absolute',
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
-  // width: '100%',
   maxWidth: '700px',
   bgcolor: '#393233',
   border: '2px solid #000',
@@ -37,19 +41,50 @@ const cardMediaStyle = {
   width: 'auto',
   height: '100%',
   aspectRatio: '1 / 1', // 1:1 aspect ratio for square
-  objectFit: 'cover', // Ensure the image covers the square
+  objectFit: 'contain', // Ensure the image is contained in the square
   objectPosition: 'center', // Center the image
+  cursor: 'pointer',
 };
 
-export default function CreateCardModal() {
+const giphyApiKey = import.meta.env.VITE_GIPHY_API_KEY;
+const GIPHY_LIMIT = 25;
+
+if (!giphyApiKey) {
+  console.error('GIPHY API key is not defined in .env file');
+}
+
+interface GiphyGif {
+  id: string;
+  url: string;
+  images: {
+    fixed_height_downsampled: {
+      url: string;
+    };
+  };
+}
+
+interface CreateCardModalProps {
+  handleRefreshCards: () => void;
+}
+
+export default function CreateCardModal({
+  handleRefreshCards,
+}: CreateCardModalProps) {
   const [open, setOpen] = useState(false);
   const [cardTitle, setCardTitle] = useState('');
   const [cardDescription, setCardDescription] = useState('');
-  const [cardImg] = useState(
+  const [cardImg, setCardImg] = useState(
     'https://c.tenor.com/-gAHSA9JQn0AAAAM/small.gif'
   );
   const [cardError, setCardError] = useState<Error | null>(null);
   const user = useSelector((state: RootState) => state.user);
+  const [gifs, setGifs] = useState<GiphyGif[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [gifModalOpen, setGifModalOpen] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const imageListRef = useRef<HTMLDivElement>(null);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
@@ -57,6 +92,10 @@ export default function CreateCardModal() {
     setCardTitle('');
     setCardDescription('');
     setCardError(null);
+    setGifs([]);
+    setSearchQuery('');
+    setOffset(0);
+    setHasMore(true);
   };
 
   const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,6 +121,7 @@ export default function CreateCardModal() {
     }
 
     const cardData: CardData = {
+      _id: undefined,
       title: cardTitle,
       content: cardDescription,
       owner: user.userId,
@@ -91,11 +131,72 @@ export default function CreateCardModal() {
 
     try {
       await api.createCard(cardData);
+      handleRefreshCards();
       handleClose();
     } catch (error) {
       setCardError(error as Error);
     }
   };
+
+  const handleGifSelect = (gifUrl: string) => {
+    setCardImg(gifUrl);
+    setGifModalOpen(false);
+  };
+
+  const fetchGifs = async (query: string, currentOffset: number) => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get(
+        `https://api.giphy.com/v1/gifs/search?api_key=${giphyApiKey}&q=%40mintostudio+${query}&limit=${GIPHY_LIMIT}&offset=${currentOffset}&rating=g`
+      );
+      const newGifs = response.data.data;
+      setGifs((prevGifs) => [...prevGifs, ...newGifs]);
+      setHasMore(newGifs.length === GIPHY_LIMIT);
+    } catch (error) {
+      console.error('Error fetching GIFs:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (searchQuery && gifModalOpen) {
+      setGifs([]);
+      setOffset(0);
+      setHasMore(true);
+    }
+  }, [searchQuery, gifModalOpen]);
+
+  useEffect(() => {
+    if (searchQuery || gifModalOpen) {
+      fetchGifs(searchQuery, offset);
+    }
+  }, [searchQuery, offset, gifModalOpen]);
+
+  const handleGifModalOpen = () => {
+    setGifModalOpen(true);
+  };
+
+  const handleGifModalClose = () => {
+    setGifModalOpen(false);
+  };
+
+  const handleScroll = useCallback(() => {
+    if (isLoading || !hasMore || !imageListRef.current) return;
+
+    const { scrollTop, clientHeight, scrollHeight } = imageListRef.current;
+    if (scrollTop + clientHeight >= scrollHeight - 20) {
+      setOffset((prevOffset) => prevOffset + GIPHY_LIMIT);
+    }
+  }, [isLoading, hasMore]);
+
+  useEffect(() => {
+    const imageList = imageListRef.current;
+    if (imageList) {
+      imageList.addEventListener('scroll', handleScroll);
+      return () => imageList.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
 
   return (
     <div>
@@ -140,10 +241,57 @@ export default function CreateCardModal() {
               component="img"
               sx={cardMediaStyle}
               image={cardImg}
-              alt="Live from space album cover"
+              alt="Chosen gif for card"
+              onClick={handleGifModalOpen}
             />
           </Card>
           <Button onClick={handleCreateCard}>Create</Button>
+        </Box>
+      </Modal>
+      <Modal open={gifModalOpen} onClose={handleGifModalClose}>
+        <Box sx={style}>
+          <Input
+            type="text"
+            placeholder="Search for GIFs"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <div
+            ref={imageListRef}
+            style={{
+              width: 500,
+              height: 450,
+              overflowY: 'auto',
+              position: 'relative',
+            }}
+          >
+            <ImageList cols={3} rowHeight={164}>
+              {gifs.map((gif) => (
+                <ImageListItem key={gif.id}>
+                  <img
+                    src={gif.images.fixed_height_downsampled.url}
+                    alt={gif.id}
+                    onClick={() =>
+                      handleGifSelect(gif.images.fixed_height_downsampled.url)
+                    }
+                    style={{ cursor: 'pointer' }}
+                  />
+                </ImageListItem>
+              ))}
+            </ImageList>
+            {isLoading && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                }}
+              >
+                <CircularProgress />
+              </Box>
+            )}
+          </div>
         </Box>
       </Modal>
     </div>

@@ -14,6 +14,7 @@ export interface Credentials {
 }
 
 export interface CardData {
+  _id?: string;
   title: string;
   content: string;
   owner: string;
@@ -171,6 +172,26 @@ const api = {
     } catch (error: any) {
       console.error(
         'Delete Card Error:',
+        error.response ? error.response.data : error.message
+      );
+      throw error;
+    }
+  },
+  editCard: async (cardData: CardData): Promise<any> => {
+    try {
+      const token = localStorage.getItem('token');
+      const response: AxiosResponse = await axios.put(
+        `${API_BASE_URL}/cards/edit/${cardData._id}`,
+        cardData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log('Edit Card Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        'Edit Card Error:',
         error.response ? error.response.data : error.message
       );
       throw error;
