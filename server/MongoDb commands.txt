@@ -1,0 +1,15 @@
+//if getting error, start MongoDb server: 
+
+sudo systemctl start mongod
+
+
+// Check status
+
+sudo systemctl status mongod
+
+
+// Enable on boot:
+
+sudo systemctl enable mongod
+
+

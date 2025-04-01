@@ -1,0 +1,25 @@
+{
+    "name": "personal-gift-cards",
+    "version": "1.0.0",
+    "description": "Personal Gift Cards Application",
+    "scripts": {
+        "start:db": "cd server && npm run db",
+        "start:server": "cd server && npm run server",
+        "start:client": "cd client && npm run dev",
+        "start": "npm run start:db && concurrently \"npm run start:server\" \"npm run start:client\"",
+        "install:client": "cd client && npm install",
+        "install:server": "cd server && npm install",
+        "install": "npm run install:client && npm run install:server"
+    },
+    "keywords": [
+        "personal",
+        "gift",
+        "cards",
+        "fullstack"
+    ],
+    "author": "Konrad Bąk",
+    "license": "ISC",
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
+}
