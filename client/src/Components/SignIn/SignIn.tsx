@@ -18,62 +18,59 @@ import AppTheme from '../shared-theme/AppTheme';
 import ColorModeSelect from '../shared-theme/ColorModeSelect';
 import { FacebookIcon, GoogleIcon } from './components/CustomIcons';
 import ForgotPassword from './components/ForgotPassword';
+import SignUpForm from './components/SignUpForm'; // Import the new SignUpForm
 import { Card, SignInContainer } from './SignIn.styled';
 
 export default function SignIn(props: { disableCustomTheme?: boolean }) {
+  // --- State for Sign In ---
+  const [signInEmail, setSignInEmail] = React.useState('');
+  const [signInPassword, setSignInPassword] = React.useState('');
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
-  const [open, setOpen] = React.useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
+  const [signInApiError, setSignInApiError] = React.useState('');
+  const [isSignInLoading, setIsSignInLoading] = React.useState(false);
+
+  // --- State to toggle between Sign In and Sign Up ---
+  const [isSignUpView, setIsSignUpView] = React.useState(false); // <-- New State
 
   const dispatch = useDispatch<AppDispatch>();
 
-  const handleClickOpen = () => {
-    setOpen(true);
+  // --- Handlers for Forgot Password ---
+  const handleForgotPasswordOpen = () => {
+    setForgotPasswordOpen(true);
+  };
+  const handleForgotPasswordClose = () => {
+    setForgotPasswordOpen(false);
   };
 
-  const handleClose = () => {
-    setOpen(false);
+  // --- Handlers for Sign In Input Change ---
+  const handleSignInEmailChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setSignInEmail(event.target.value);
+    if (emailError) setEmailError(false);
+    if (emailErrorMessage) setEmailErrorMessage('');
+    if (signInApiError) setSignInApiError('');
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (emailError || passwordError) {
-      return;
-    }
-    const data = new FormData(event.currentTarget);
-
-    const email = data.get('email') as string;
-    const password = data.get('password') as string;
-
-    if (email && password) {
-      const credentials: Credentials = {
-        email: email,
-        password: password,
-      };
-      try {
-        const loginResponse = await api.loginUser(credentials);
-        if (loginResponse) {
-          dispatch(
-            setUser({
-              userId: loginResponse.userId,
-              token: loginResponse.token,
-              username: loginResponse.username,
-            })
-          );
-        }
-      } catch (error) {}
-    }
+  const handleSignInPasswordChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setSignInPassword(event.target.value);
+    if (passwordError) setPasswordError(false);
+    if (passwordErrorMessage) setPasswordErrorMessage('');
+    if (signInApiError) setSignInApiError('');
   };
 
-  const validateInputs = () => {
-    const email = document.getElementById('email') as HTMLInputElement;
-    const password = document.getElementById('password') as HTMLInputElement;
-
+  // --- Sign In Validation ---
+  const validateSignInInputs = () => {
     let isValid = true;
+    setSignInApiError(''); // Clear previous API error
 
-    if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
+    if (!signInEmail || !/\S+@\S+\.\S+/.test(signInEmail)) {
       setEmailError(true);
       setEmailErrorMessage('Please enter a valid email address.');
       isValid = false;
@@ -82,7 +79,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
       setEmailErrorMessage('');
     }
 
-    if (!password.value || password.value.length < 6) {
+    if (!signInPassword || signInPassword.length < 6) {
       setPasswordError(true);
       setPasswordErrorMessage('Password must be at least 6 characters long.');
       isValid = false;
@@ -94,6 +91,49 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     return isValid;
   };
 
+  // --- Sign In Submit Handler ---
+  const handleSignInSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+    if (!validateSignInInputs()) {
+      return;
+    }
+
+    setIsSignInLoading(true);
+    setSignInApiError('');
+
+    const credentials: Credentials = {
+      email: signInEmail,
+      password: signInPassword,
+    };
+    try {
+      const loginResponse = await api.loginUser(credentials);
+      if (loginResponse) {
+        dispatch(
+          setUser({
+            userId: loginResponse.userId,
+            token: loginResponse.token,
+            username: loginResponse.username,
+          })
+        );
+        // No need to setLoading(false) here as the component might unmount/redirect
+      } else {
+        // Should not happen if api.loginUser throws on error, but good practice
+        setSignInApiError('Login failed. Please check your credentials.');
+        setIsSignInLoading(false);
+      }
+    } catch (error: any) {
+      console.error('Sign In Error:', error);
+      const message =
+        error.response?.data?.message ||
+        'Login failed. Please check your credentials or server status.';
+      setSignInApiError(message);
+      setIsSignInLoading(false);
+    }
+  };
+
+  // --- Strings --- (Keep relevant ones, SignUpForm has its own)
   const strings = {
     signIn: 'Sign in',
     email: 'Email',
@@ -117,111 +157,163 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
           sx={{ position: 'fixed', top: '1rem', right: '1rem' }}
         />
         <Card variant="outlined">
-          <Typography
-            component="h1"
-            variant="h4"
-            sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
-          >
-            {strings.signIn}
-          </Typography>
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            noValidate
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              width: '100%',
-              gap: 2,
-            }}
-          >
-            <FormControl>
-              <FormLabel htmlFor="email">{strings.email}</FormLabel>
-              <TextField
-                error={emailError}
-                helperText={emailErrorMessage}
-                id="email"
-                type="email"
-                name="email"
-                placeholder={strings.emailPlaceholder}
-                autoComplete="email"
-                autoFocus
-                required
-                fullWidth
-                variant="outlined"
-                color={emailError ? 'error' : 'primary'}
-              />
-            </FormControl>
-            <FormControl>
-              <FormLabel htmlFor="password">{strings.password}</FormLabel>
-              <TextField
-                error={passwordError}
-                helperText={passwordErrorMessage}
-                name="password"
-                placeholder={strings.passwordPlaceholder}
-                type="password"
-                id="password"
-                autoComplete="current-password"
-                autoFocus
-                required
-                fullWidth
-                variant="outlined"
-                color={passwordError ? 'error' : 'primary'}
-              />
-            </FormControl>
-            <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
-              label={strings.rememberMe}
-            />
-            <ForgotPassword open={open} handleClose={handleClose} />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              onClick={validateInputs}
-            >
-              {strings.signIn}
-            </Button>
-            <Link
-              component="button"
-              type="button"
-              onClick={handleClickOpen}
-              variant="body2"
-              sx={{ alignSelf: 'center' }}
-            >
-              {strings.forgot}
-            </Link>
-          </Box>
-          <Divider>{strings.or}</Divider>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert(`${strings.signIn} ${strings.withGoogle}`)}
-              startIcon={<GoogleIcon />}
-            >
-              {`${strings.signIn} ${strings.withGoogle}`}
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert(`${strings.signIn} ${strings.withFacebook}`)}
-              startIcon={<FacebookIcon />}
-            >
-              {`${strings.signIn} ${strings.withFacebook}`}
-            </Button>
-            <Typography sx={{ textAlign: 'center' }}>
-              {`${strings.dontHaveAcc} `}
-              <Link
-                href="/material-ui/getting-started/templates/sign-in/"
-                variant="body2"
-                sx={{ alignSelf: 'center' }}
+          {/* --- Conditional Rendering: Sign In or Sign Up --- */}
+          {!isSignUpView ? (
+            // --- Sign In View ---
+            <>
+              <Typography
+                component="h1"
+                variant="h4"
+                sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
               >
-                {strings.signUp}
-              </Link>
-            </Typography>
-          </Box>
+                {strings.signIn}
+              </Typography>
+              <Box
+                component="form"
+                onSubmit={handleSignInSubmit}
+                noValidate
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: '100%',
+                  gap: 2,
+                  mt: 2, // Add margin top
+                }}
+              >
+                <FormControl>
+                  <FormLabel htmlFor="email-signin">{strings.email}</FormLabel>{' '}
+                  {/* Unique ID */}
+                  <TextField
+                    error={emailError}
+                    helperText={emailErrorMessage}
+                    id="email-signin" // Unique ID
+                    type="email"
+                    name="email"
+                    placeholder={strings.emailPlaceholder}
+                    autoComplete="email"
+                    autoFocus
+                    required
+                    fullWidth
+                    variant="outlined"
+                    color={emailError ? 'error' : 'primary'}
+                    value={signInEmail}
+                    onChange={handleSignInEmailChange}
+                    disabled={isSignInLoading}
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel htmlFor="password-signin">
+                    {strings.password}
+                  </FormLabel>{' '}
+                  {/* Unique ID */}
+                  <TextField
+                    error={passwordError}
+                    helperText={passwordErrorMessage}
+                    name="password"
+                    placeholder={strings.passwordPlaceholder}
+                    type="password"
+                    id="password-signin" // Unique ID
+                    autoComplete="current-password"
+                    required
+                    fullWidth
+                    variant="outlined"
+                    color={passwordError ? 'error' : 'primary'}
+                    value={signInPassword}
+                    onChange={handleSignInPasswordChange}
+                    disabled={isSignInLoading}
+                  />
+                </FormControl>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      value="remember"
+                      color="primary"
+                      disabled={isSignInLoading}
+                    />
+                  }
+                  label={strings.rememberMe}
+                />
+                {/* API Error Display */}
+                {signInApiError && (
+                  <Typography
+                    color="error"
+                    variant="body2"
+                    sx={{ mt: 1, textAlign: 'center' }}
+                  >
+                    {signInApiError}
+                  </Typography>
+                )}
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 1 }}
+                  disabled={isSignInLoading}
+                >
+                  {isSignInLoading ? 'Signing In...' : strings.signIn}
+                </Button>
+                <Link
+                  component="button"
+                  type="button"
+                  onClick={handleForgotPasswordOpen}
+                  variant="body2"
+                  sx={{ alignSelf: 'center' }}
+                  disabled={isSignInLoading}
+                >
+                  {strings.forgot}
+                </Link>
+              </Box>
+              <Divider sx={{ my: 2 }}>{strings.or}</Divider> {/* Add margin */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() =>
+                    alert(`${strings.signIn} ${strings.withGoogle}`)
+                  }
+                  startIcon={<GoogleIcon />}
+                  disabled={isSignInLoading}
+                >
+                  {`${strings.signIn} ${strings.withGoogle}`}
+                </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() =>
+                    alert(`${strings.signIn} ${strings.withFacebook}`)
+                  }
+                  startIcon={<FacebookIcon />}
+                  disabled={isSignInLoading}
+                >
+                  {`${strings.signIn} ${strings.withFacebook}`}
+                </Button>
+                <Typography sx={{ textAlign: 'center', mt: 2 }}>
+                  {' '}
+                  {/* Add margin */}
+                  {`${strings.dontHaveAcc} `}
+                  <Link
+                    component="button" // Change to button
+                    type="button" // Change to button
+                    onClick={() => setIsSignUpView(true)} // <-- Set state onClick
+                    variant="body2"
+                    sx={{ alignSelf: 'center' }}
+                    disabled={isSignInLoading}
+                  >
+                    {strings.signUp}
+                  </Link>
+                </Typography>
+              </Box>
+            </>
+          ) : (
+            // --- Sign Up View ---
+            <SignUpForm onSwitchToSignIn={() => setIsSignUpView(false)} /> // <-- Render SignUpForm
+          )}
         </Card>
+        {/* Forgot Password Modal (remains outside conditional rendering) */}
+        <ForgotPassword
+          open={forgotPasswordOpen}
+          handleClose={handleForgotPasswordClose}
+        />
       </SignInContainer>
     </AppTheme>
   );

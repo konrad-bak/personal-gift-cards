@@ -1,122 +1,133 @@
 import {
+  Box,
+  Button,
   Card,
   CardContent,
   CardMedia,
-  TextField,
-  Button,
-  Box,
   Modal,
+  TextField,
   Typography,
-  ImageList,
-  ImageListItem,
-  Input,
-  CircularProgress,
 } from '@mui/material';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store';
 import api, { CardData } from '../../../utils/api';
-import axios from 'axios';
+import GifSelectorModal from './GifSelectorModal'; // Import the new component
 
+// --- Styles ---
 const style = {
   position: 'absolute',
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
   maxWidth: '700px',
+  width: '90%', // Make responsive
   bgcolor: '#393233',
   border: '2px solid #000',
   boxShadow: 24,
   p: 4,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
 };
 
 const cardStyle = {
   display: 'flex',
   maxWidth: '602px',
   width: '100%',
-  aspectRatio: '2.5 / 1', // 2.5 width to 1 height
+  aspectRatio: '2.5 / 1',
+  marginBottom: 2,
+  bgcolor: '#4a4243', // Add background to card area
 };
 
 const cardMediaStyle = {
-  width: 'auto',
+  width: '40%', // Adjust width allocation
   height: '100%',
-  aspectRatio: '1 / 1', // 1:1 aspect ratio for square
-  objectFit: 'contain', // Ensure the image is contained in the square
-  objectPosition: 'center', // Center the image
+  aspectRatio: '1 / 1',
+  objectFit: 'contain',
+  objectPosition: 'center',
   cursor: 'pointer',
+  backgroundColor: '#555',
+  borderLeft: '1px solid #444',
 };
 
-const giphyApiKey = import.meta.env.VITE_GIPHY_API_KEY;
-const GIPHY_LIMIT = 25;
+const cardContentStyle = {
+  flex: '1', // Take remaining space
+  display: 'flex',
+  flexDirection: 'column',
+  paddingBottom: '16px !important', // Override default padding
+  justifyContent: 'space-between', // Push fields apart if needed
+};
 
-if (!giphyApiKey) {
-  console.error('GIPHY API key is not defined in .env file');
-}
+// --- Constants ---
+const STRINGS = {
+  CARD_TITLE_LABEL: 'Card Title',
+  CARD_DESCRIPTION_LABEL: 'Card Description',
+  CREATE_CARD_BUTTON: 'Create Card',
+  CREATE_CARD_MODAL_TITLE: 'Create Card',
+  GIF_ALT_TEXT: 'Chosen gif for card',
+  TITLE_AND_DESCRIPTION_REQUIRED: 'Title and description are required.',
+  USER_ID_MISSING: 'User ID is missing. Please log in.',
+  CREATE_BUTTON_TEXT: 'Create',
+  DEFAULT_GIF:
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNW00YmZpZzZocXN6NnZtaTJpNzhmeHQxd3NxY2w0eDFtN2V5c3RzZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7abKhOpu0NwenH3O/giphy.gif',
+};
 
-interface GiphyGif {
-  id: string;
-  url: string;
-  images: {
-    fixed_height_downsampled: {
-      url: string;
-    };
-  };
-}
-
+// --- Props Interface ---
 interface CreateCardModalProps {
   handleRefreshCards: () => void;
 }
 
+// --- Component ---
 export default function CreateCardModal({
   handleRefreshCards,
 }: CreateCardModalProps) {
   const [open, setOpen] = useState(false);
   const [cardTitle, setCardTitle] = useState('');
   const [cardDescription, setCardDescription] = useState('');
-  const [cardImg, setCardImg] = useState(
-    'https://c.tenor.com/-gAHSA9JQn0AAAAM/small.gif'
-  );
-  const [cardError, setCardError] = useState<Error | null>(null);
+  const [cardImg, setCardImg] = useState(STRINGS.DEFAULT_GIF);
+  const [cardError, setCardError] = useState<string | null>(null);
+  const [gifModalOpen, setGifModalOpen] = useState(false); // State to control GifSelectorModal
   const user = useSelector((state: RootState) => state.user);
-  const [gifs, setGifs] = useState<GiphyGif[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [gifModalOpen, setGifModalOpen] = useState(false);
-  const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const imageListRef = useRef<HTMLDivElement>(null);
 
+  // --- Handlers ---
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
     setOpen(false);
+    // Reset form state on close
     setCardTitle('');
     setCardDescription('');
+    setCardImg(STRINGS.DEFAULT_GIF); // Reset to default image
     setCardError(null);
-    setGifs([]);
-    setSearchQuery('');
-    setOffset(0);
-    setHasMore(true);
+    setGifModalOpen(false); // Ensure gif modal is closed too
   };
 
   const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setCardTitle(event.target.value);
+    if (cardError === STRINGS.TITLE_AND_DESCRIPTION_REQUIRED) {
+      setCardError(null);
+    }
   };
 
   const handleDescriptionChange = (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     setCardDescription(event.target.value);
+    if (cardError === STRINGS.TITLE_AND_DESCRIPTION_REQUIRED) {
+      setCardError(null);
+    }
   };
 
   const handleCreateCard = async () => {
-    if (!cardTitle || !cardDescription) {
-      setCardError(new Error('Title and description are required.'));
+    setCardError(null);
+    if (!cardTitle.trim() || !cardDescription.trim()) {
+      // Use trim() for validation
+      setCardError(STRINGS.TITLE_AND_DESCRIPTION_REQUIRED);
       return;
     }
-    setCardError(null);
 
     if (!user.userId) {
-      setCardError(new Error('User ID is missing. Please log in.'));
+      setCardError(STRINGS.USER_ID_MISSING);
       return;
     }
 
@@ -132,108 +143,84 @@ export default function CreateCardModal({
     try {
       await api.createCard(cardData);
       handleRefreshCards();
-      handleClose();
+      handleClose(); // Close modal on success
     } catch (error) {
-      setCardError(error as Error);
-    }
-  };
-
-  const handleGifSelect = (gifUrl: string) => {
-    setCardImg(gifUrl);
-    setGifModalOpen(false);
-  };
-
-  const fetchGifs = async (query: string, currentOffset: number) => {
-    setIsLoading(true);
-    try {
-      const response = await axios.get(
-        `https://api.giphy.com/v1/gifs/search?api_key=${giphyApiKey}&q=%40mintostudio+${query}&limit=${GIPHY_LIMIT}&offset=${currentOffset}&rating=g`
+      console.error('Error creating card:', error);
+      setCardError(
+        error instanceof Error ? error.message : 'Failed to create card.'
       );
-      const newGifs = response.data.data;
-      setGifs((prevGifs) => [...prevGifs, ...newGifs]);
-      setHasMore(newGifs.length === GIPHY_LIMIT);
-    } catch (error) {
-      console.error('Error fetching GIFs:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (searchQuery && gifModalOpen) {
-      setGifs([]);
-      setOffset(0);
-      setHasMore(true);
-    }
-  }, [searchQuery, gifModalOpen]);
+  // --- Gif Modal Handlers ---
+  const handleGifModalOpen = () => setGifModalOpen(true);
+  const handleGifModalClose = () => setGifModalOpen(false);
 
-  useEffect(() => {
-    if (searchQuery || gifModalOpen) {
-      fetchGifs(searchQuery, offset);
-    }
-  }, [searchQuery, offset, gifModalOpen]);
-
-  const handleGifModalOpen = () => {
-    setGifModalOpen(true);
+  const handleGifSelected = (gifUrl: string) => {
+    setCardImg(gifUrl);
+    handleGifModalClose(); // Close the gif modal after selection
   };
 
-  const handleGifModalClose = () => {
-    setGifModalOpen(false);
-  };
-
-  const handleScroll = useCallback(() => {
-    if (isLoading || !hasMore || !imageListRef.current) return;
-
-    const { scrollTop, clientHeight, scrollHeight } = imageListRef.current;
-    if (scrollTop + clientHeight >= scrollHeight - 20) {
-      setOffset((prevOffset) => prevOffset + GIPHY_LIMIT);
-    }
-  }, [isLoading, hasMore]);
-
-  useEffect(() => {
-    const imageList = imageListRef.current;
-    if (imageList) {
-      imageList.addEventListener('scroll', handleScroll);
-      return () => imageList.removeEventListener('scroll', handleScroll);
-    }
-  }, [handleScroll]);
-
+  // --- Render ---
   return (
     <div>
-      <Button onClick={handleOpen}>Create Card</Button>
+      <Button variant="contained" onClick={handleOpen}>
+        {STRINGS.CREATE_CARD_BUTTON}
+      </Button>
+
+      {/* Create Card Modal */}
       <Modal
         open={open}
         onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
+        aria-labelledby="create-card-modal-title"
+        aria-describedby="create-card-modal-description"
       >
         <Box sx={style}>
-          <Typography id="modal-modal-title" variant="h6" component="h2">
-            Create Card
+          <Typography
+            id="create-card-modal-title"
+            variant="h6"
+            component="h2"
+            sx={{ mb: 2, color: 'white' }} // Ensure text is visible
+          >
+            {STRINGS.CREATE_CARD_MODAL_TITLE}
           </Typography>
           {cardError && (
-            <Typography color="error">{cardError.message}</Typography>
+            <Typography color="error" sx={{ mb: 2 }}>
+              {cardError}
+            </Typography>
           )}
           <Card sx={cardStyle}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', flex: '1' }}>
-              <CardContent sx={{ flex: '1 0 auto' }}>
+            <Box sx={cardContentStyle}>
+              <CardContent sx={{ padding: '8px 16px' }}>
+                {' '}
+                {/* Adjust padding */}
                 <TextField
-                  label="Card Title"
-                  variant="outlined"
+                  label={STRINGS.CARD_TITLE_LABEL}
+                  variant="filled" // Use filled for better contrast on dark bg
                   fullWidth
                   value={cardTitle}
                   onChange={handleTitleChange}
-                  margin="normal"
+                  margin="dense"
+                  required
+                  size="small" // Make fields smaller
+                  InputLabelProps={{ style: { color: '#ccc' } }}
+                  inputProps={{ style: { color: 'white' } }}
+                  sx={{ backgroundColor: '#665c5d', borderRadius: 1, mb: 1 }} // Style field
                 />
                 <TextField
-                  label="Card Description"
-                  variant="outlined"
+                  label={STRINGS.CARD_DESCRIPTION_LABEL}
+                  variant="filled" // Use filled
                   fullWidth
                   multiline
                   rows={4}
                   value={cardDescription}
                   onChange={handleDescriptionChange}
-                  margin="normal"
+                  margin="dense"
+                  required
+                  size="small" // Make fields smaller
+                  InputLabelProps={{ style: { color: '#ccc' } }}
+                  inputProps={{ style: { color: 'white' } }}
+                  sx={{ backgroundColor: '#665c5d', borderRadius: 1 }} // Style field
                 />
               </CardContent>
             </Box>
@@ -241,59 +228,27 @@ export default function CreateCardModal({
               component="img"
               sx={cardMediaStyle}
               image={cardImg}
-              alt="Chosen gif for card"
-              onClick={handleGifModalOpen}
+              alt={STRINGS.GIF_ALT_TEXT}
+              onClick={handleGifModalOpen} // Open GIF modal on click
             />
           </Card>
-          <Button onClick={handleCreateCard}>Create</Button>
-        </Box>
-      </Modal>
-      <Modal open={gifModalOpen} onClose={handleGifModalClose}>
-        <Box sx={style}>
-          <Input
-            type="text"
-            placeholder="Search for GIFs"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <div
-            ref={imageListRef}
-            style={{
-              width: 500,
-              height: 450,
-              overflowY: 'auto',
-              position: 'relative',
-            }}
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleCreateCard}
+            sx={{ mt: 2 }} // Add margin top to button
           >
-            <ImageList cols={3} rowHeight={164}>
-              {gifs.map((gif) => (
-                <ImageListItem key={gif.id}>
-                  <img
-                    src={gif.images.fixed_height_downsampled.url}
-                    alt={gif.id}
-                    onClick={() =>
-                      handleGifSelect(gif.images.fixed_height_downsampled.url)
-                    }
-                    style={{ cursor: 'pointer' }}
-                  />
-                </ImageListItem>
-              ))}
-            </ImageList>
-            {isLoading && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                }}
-              >
-                <CircularProgress />
-              </Box>
-            )}
-          </div>
+            {STRINGS.CREATE_BUTTON_TEXT}
+          </Button>
         </Box>
       </Modal>
+
+      {/* Select GIF Modal (Render the extracted component) */}
+      <GifSelectorModal
+        open={gifModalOpen}
+        onClose={handleGifModalClose}
+        onGifSelect={handleGifSelected}
+      />
     </div>
   );
 }
