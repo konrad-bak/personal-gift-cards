@@ -6,15 +6,12 @@ export default [
   {
     languageOptions: {
       globals: {
-        ...globals.node, // Use Node.js globals
+        ...globals.node,
+        ...globals.es2022, // or the desired ECMAScript version
       },
       parserOptions: {
-        ecmaVersion: 'latest', // or the desired ECMAScript version
+        ecmaVersion: 'latest',
       },
-    },
-    env: {
-      node: true, // Specify Node.js environment
-      es6: true, // Specify ES6 environment
     },
   },
   pluginJs.configs.recommended,

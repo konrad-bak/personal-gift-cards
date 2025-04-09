@@ -1,13 +1,18 @@
 import React from 'react';
+import { useDispatch } from 'react-redux';
+import { clearUser, setUser } from '../redux/actions';
+import { AppDispatch } from '../redux/store';
 import api, { CardData, Credentials, UserData } from '../utils/api';
 
 const TestComponent: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+
   const handleRegister = async () => {
     const userData: UserData = {
       username: 'Test',
       email: 'test@example.com',
-      password: 'test',
-    }; // Updated username
+      password: 'testtest123',
+    };
     try {
       await api.registerUser(userData);
     } catch (error) {}
@@ -15,17 +20,39 @@ const TestComponent: React.FC = () => {
 
   const handleLogin = async () => {
     const credentials: Credentials = {
-      username: 'Test',
-      password: 'test',
-    }; // Updated username
+      email: 'test@example.com',
+      password: 'testtest123',
+    };
     try {
-      await api.loginUser(credentials);
+      const loginResponse = await api.loginUser(credentials);
+      if (loginResponse) {
+        dispatch(
+          setUser({
+            userId: loginResponse.userId,
+            token: loginResponse.token,
+            username: loginResponse.username,
+          })
+        );
+      }
+    } catch (error) {}
+  };
+
+  const handleLogout = () => {
+    api.logoutUser();
+    dispatch(clearUser());
+  };
+
+  const handleDeleteUser = async () => {
+    const userId = localStorage.getItem('userId') || '';
+    try {
+      await api.deleteUser(userId);
     } catch (error) {}
   };
 
   const handleCreateCard = async () => {
     const userId = localStorage.getItem('userId') || '';
     const cardData: CardData = {
+      _id: undefined,
       title: 'Test Card',
       content: 'This is a test card.',
       owner: userId,
@@ -50,15 +77,17 @@ const TestComponent: React.FC = () => {
     try {
       const cards = await api.getUserCards(userId);
       if (cards && cards.length > 0) {
-        await api.sendCard(cards[0]._id, userId);
+        await api.sendCard(cards[0]._id || '', userId);
       }
     } catch (error) {}
   };
 
   return (
     <div>
-      <button onClick={handleRegister}>Register</button>
-      <button onClick={handleLogin}>Login</button>
+      <button onClick={handleRegister}>Register Test user</button>
+      <button onClick={handleLogin}>Login Test user</button>
+      <button onClick={handleLogout}>Logout! Test user</button>
+      <button onClick={handleDeleteUser}>Delete Test user</button>
       <button onClick={handleCreateCard}>Create Card</button>
       <button onClick={handleGetUserCards}>Get User Cards</button>
       <button onClick={handleSendCard}>Send Card</button>

@@ -59,4 +59,42 @@ router.put('/send/:cardId/:recipientId', authenticate, async (req, res) => {
   }
 });
 
+// Delete single card (by logged in user)
+router.delete('/delete/:cardId/:userId', authenticate, async (req, res) => {
+  try {
+    if (req.params.userId !== req.userId) {
+      return res.status(403).send({ message: 'Unauthorized' });
+    }
+
+    const userId = req.params.userId;
+    const cardId = req.params.cardId;
+
+    const card = await Card.findOne({ _id: cardId, owner: userId }); // Find by _id and owner
+
+    if (!card) {
+      return res.status(404).send({ message: 'Card not found' });
+    }
+
+    // Delete card from users it was sent to
+    if (card.recipients && card.recipients.length > 0) {
+      for (const recipientId of card.recipients) {
+        await User.findByIdAndUpdate(recipientId, {
+          $pull: { receivedCards: cardId },
+        });
+      }
+    }
+
+    // Delete the card
+    await Card.deleteOne({ _id: cardId, owner: userId });
+
+    res.send({
+      message:
+        'The target Card was deleted from user account and from all recipients accounts',
+    });
+  } catch (error) {
+    console.error('Delete Card Error:', error);
+    res.status(500).send({ message: 'Internal Server Error' });
+  }
+});
+
 export default router;

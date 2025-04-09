@@ -9,11 +9,12 @@ export interface UserData {
 }
 
 export interface Credentials {
-  username: string;
-  password: string;
+  email: string | FormDataEntryValue;
+  password: string | FormDataEntryValue;
 }
 
 export interface CardData {
+  _id?: string;
   title: string;
   content: string;
   owner: string;
@@ -24,6 +25,7 @@ export interface CardData {
 export interface LoginResponse {
   token: string;
   userId: string;
+  username: string;
 }
 
 const api = {
@@ -57,6 +59,33 @@ const api = {
     } catch (error: any) {
       console.error(
         'Login User Error:',
+        error.response ? error.response.data : error.message
+      );
+      throw error;
+    }
+  },
+
+  logoutUser: (): void => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+
+    console.log('User logged out.');
+  },
+
+  deleteUser: async (userId: string): Promise<any> => {
+    try {
+      const token = localStorage.getItem('token');
+      const response: AxiosResponse = await axios.delete(
+        `${API_BASE_URL}/auth/users/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log('Delete User Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        'Delete User Error:',
         error.response ? error.response.data : error.message
       );
       throw error;
@@ -123,6 +152,46 @@ const api = {
     } catch (error: any) {
       console.error(
         'Send Card Error:',
+        error.response ? error.response.data : error.message
+      );
+      throw error;
+    }
+  },
+
+  deleteCard: async (cardId: string, userId: string): Promise<any> => {
+    try {
+      const token = localStorage.getItem('token');
+      const response: AxiosResponse = await axios.delete(
+        `${API_BASE_URL}/cards/delete/${cardId}/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log('Delete Card Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        'Delete Card Error:',
+        error.response ? error.response.data : error.message
+      );
+      throw error;
+    }
+  },
+  editCard: async (cardData: CardData): Promise<any> => {
+    try {
+      const token = localStorage.getItem('token');
+      const response: AxiosResponse = await axios.put(
+        `${API_BASE_URL}/cards/edit/${cardData._id}`,
+        cardData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log('Edit Card Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        'Edit Card Error:',
         error.response ? error.response.data : error.message
       );
       throw error;
