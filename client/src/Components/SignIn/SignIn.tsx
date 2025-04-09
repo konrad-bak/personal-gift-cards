@@ -18,8 +18,11 @@ import AppTheme from '../shared-theme/AppTheme';
 import ColorModeSelect from '../shared-theme/ColorModeSelect';
 import { FacebookIcon, GoogleIcon } from './components/CustomIcons';
 import ForgotPassword from './components/ForgotPassword';
-import SignUpForm from './components/SignUpForm'; // Import the new SignUpForm
+// import SignUpForm from './components/SignUpForm'; // Import the new SignUpForm
+import { lazy, Suspense } from 'react';
 import { Card, SignInContainer } from './SignIn.styled';
+
+const SignUpForm = lazy(() => import('./components/SignUpForm'));
 
 export default function SignIn(props: { disableCustomTheme?: boolean }) {
   // --- State for Sign In ---
@@ -306,7 +309,9 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             </>
           ) : (
             // --- Sign Up View ---
-            <SignUpForm onSwitchToSignIn={() => setIsSignUpView(false)} /> // <-- Render SignUpForm
+            <Suspense fallback={<>Loading...</>}>
+              <SignUpForm onSwitchToSignIn={() => setIsSignUpView(false)} />
+            </Suspense>
           )}
         </Card>
         {/* Forgot Password Modal (remains outside conditional rendering) */}
